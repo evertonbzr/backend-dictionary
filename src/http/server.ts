@@ -42,4 +42,5 @@ Promise.all([]).then(() => {
   );
 
   app.register(require("./routes/health"));
+  app.register(require("./routes/routes"));
 });
