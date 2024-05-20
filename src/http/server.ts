@@ -40,4 +40,6 @@ Promise.all([]).then(() => {
       console.log(`Server listening at ${address}`);
     }
   );
+
+  app.register(require("./routes/health"));
 });

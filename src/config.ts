@@ -7,7 +7,7 @@ const isProduction: boolean = nodeEnv === "production";
 const appName = "backend-dictionary";
 
 const development = {
-  appName,
+  name: appName,
   port: 3000,
   isDevelopment,
   isProduction,
@@ -15,7 +15,7 @@ const development = {
 };
 
 const production = {
-  appName,
+  name: appName,
   port: 3000,
   isDevelopment,
   isProduction,
