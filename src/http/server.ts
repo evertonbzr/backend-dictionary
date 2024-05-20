@@ -2,7 +2,7 @@
 
 import Fastify from "fastify";
 import { appConfig } from "../config";
-import { initRedis } from "./db/redis";
+import { initRedis } from "../db/redis";
 
 const app = Fastify({
   logger: false,
