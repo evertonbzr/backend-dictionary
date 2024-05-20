@@ -11,6 +11,7 @@ const development = {
   port: 3000,
   isDevelopment,
   isProduction,
+  jwtSecret: env.JWT_SECRET,
 };
 
 const production = {
@@ -18,6 +19,7 @@ const production = {
   port: 3000,
   isDevelopment,
   isProduction,
+  jwtSecret: env.JWT_SECRET,
 };
 
 const configMap: any = {
