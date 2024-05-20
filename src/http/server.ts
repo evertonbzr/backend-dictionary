@@ -2,6 +2,7 @@
 
 import Fastify from "fastify";
 import { appConfig } from "../config";
+import { initRedis } from "./db/redis";
 
 const app = Fastify({
   logger: false,
@@ -26,7 +27,7 @@ app.register(require("@fastify/cookie"), {
   hook: "onRequest",
 });
 
-Promise.all([]).then(() => {
+Promise.all([initRedis()]).then(() => {
   app.listen(
     {
       port: appConfig.port,

@@ -12,6 +12,9 @@ const development = {
   isDevelopment,
   isProduction,
   jwtSecret: env.JWT_SECRET,
+  redis: {
+    uri: env.REDIS_URI,
+  },
 };
 
 const production = {
@@ -20,6 +23,9 @@ const production = {
   isDevelopment,
   isProduction,
   jwtSecret: env.JWT_SECRET,
+  redis: {
+    uri: env.REDIS_URI,
+  },
 };
 
 const configMap: any = {
