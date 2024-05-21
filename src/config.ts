@@ -15,6 +15,7 @@ const development = {
   redis: {
     uri: env.REDIS_URI,
   },
+  dbUrl: env.DB_URL,
 };
 
 const production = {
@@ -26,6 +27,7 @@ const production = {
   redis: {
     uri: env.REDIS_URI,
   },
+  dbUrl: env.DB_URL,
 };
 
 const configMap: any = {

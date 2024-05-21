@@ -10,7 +10,6 @@ import z from "zod";
 const jwtPayloadSchema = z.object({
   sub: z.string(),
   createdAt: z.string(),
-  requestId: z.string().optional(),
 });
 
 type JwtPayload = z.infer<typeof jwtPayloadSchema>;
@@ -18,6 +17,7 @@ type JwtPayload = z.infer<typeof jwtPayloadSchema>;
 declare module "fastify" {
   interface FastifyRequest {
     getCurrentUser: () => Promise<{ user: any }>;
+    signJwt: (payload: JwtPayload) => Promise<string>;
   }
 }
 
@@ -45,6 +45,9 @@ const myPluginAsync: FastifyPluginAsync = async (fastify) => {
       return {
         user: cachedUser.user,
       };
+    };
+    request.signJwt = async (payload: JwtPayload) => {
+      return fastify.jwt.sign(payload);
     };
   });
 };

@@ -1,6 +1,7 @@
 // Desc: Fastify server setup
 
 import Fastify from "fastify";
+import { ZodError } from "zod";
 import { appConfig } from "../config";
 import { initRedis } from "../db/redis";
 
@@ -41,6 +42,20 @@ Promise.all([initRedis()]).then(() => {
       console.log(`Server listening at ${address}`);
     }
   );
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ZodError) {
+      reply.status(400).send({
+        message: "Validation error",
+        stack: error.errors,
+      });
+    } else if (error instanceof Fastify.errorCodes.FST_ERR_BAD_STATUS_CODE) {
+      reply.send(error);
+    } else {
+      // fastify will use parent error handler to handle this
+      reply.send(error);
+    }
+  });
 
   app.register(require("./routes/health"));
   app.register(require("./routes/routes"));
