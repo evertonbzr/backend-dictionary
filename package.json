@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx ./src/http/server.ts",
     "dev": "tsx watch ./src/http/server.ts",
-    "migrate": "tsx ./src/db/migrate.ts"
+    "migrate": "tsx ./src/db/migrate.ts",
+    "seed": "tsx ./src/db/seed.ts"
   },
   "keywords": [],
   "author": "",
