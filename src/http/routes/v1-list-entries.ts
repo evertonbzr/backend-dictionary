@@ -2,6 +2,7 @@
 
 import { db } from "@/db/drizzle";
 import { words } from "@/db/schema";
+import { redisGet, redisSet } from "@/utils/redis";
 import { and, count, eq, gt, ilike } from "drizzle-orm";
 import { FastifyReply, FastifyRequest } from "fastify";
 import z from "zod";
@@ -17,6 +18,21 @@ export const v1ListEntries = async (
   reply: FastifyReply
 ) => {
   const { search, limit = 20, cursor } = querySchema.parse(req.query);
+
+  const key = `url:${req.originalUrl}`;
+
+  const cached = await redisGet({
+    key,
+  });
+
+  const milliseconds = reply.elapsedTime;
+
+  if (cached) {
+    return reply
+      .send(cached)
+      .header("x-cache", "HIT")
+      .header("x-response-time", milliseconds);
+  }
 
   const idQuery = db.select({ id: words.id }).from(words).limit(1);
 
@@ -67,5 +83,14 @@ export const v1ListEntries = async (
     hasPrev: !!previousCuid,
   };
 
-  reply.send(response);
+  await redisSet({
+    key,
+    data: response,
+    cacheTimeSeconds: 10 * 60, // 10 minutes
+  });
+
+  reply
+    .send(response)
+    .header("x-cache", "MISS")
+    .header("x-response-time", milliseconds);
 };

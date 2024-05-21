@@ -83,7 +83,7 @@ async function getCachedUser({
     await redisSet({
       key,
       data: { user },
-      cacheTimeSeconds: Number(process.env.JWT_USER_CACHE_TIME ?? 30000),
+      cacheTimeSeconds: Number(process.env.JWT_USER_CACHE_TIME ?? 30 * 60),
       redisClient: redis,
     });
 

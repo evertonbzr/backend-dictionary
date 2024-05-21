@@ -22,7 +22,7 @@ export async function redisGet<T = string>({
 export async function redisSet({
   key,
   data,
-  cacheTimeSeconds = 5,
+  cacheTimeSeconds = 2 * 60 * 60, // 2 hours
   redisClient = redisInstance,
 }: {
   key: string;

@@ -3,6 +3,7 @@
 import { db } from "@/db/drizzle";
 import { words } from "@/db/schema";
 import { historic } from "@/db/schema/historic";
+import { redisGet, redisSet } from "@/utils/redis";
 import { eq } from "drizzle-orm";
 import { FastifyReply, FastifyRequest } from "fastify";
 import z from "zod";
@@ -16,6 +17,31 @@ export const v1GetWord = async (req: FastifyRequest, reply: FastifyReply) => {
   const { word } = paramsSchema.parse(req.params);
 
   const { user } = await getCurrentUser();
+
+  const key = `url:${req.originalUrl}`;
+
+  const cached = await redisGet<any>({
+    key,
+  });
+
+  const milliseconds = reply.elapsedTime;
+
+  if (cached) {
+    const { wordId } = cached as any;
+
+    await db.insert(historic).values({
+      userId: user.id,
+      wordId: wordId,
+    });
+
+    return reply
+      .send({
+        ...cached,
+        wordId: undefined,
+      })
+      .header("x-cache", "HIT")
+      .header("x-response-time", milliseconds);
+  }
 
   const wordFound = await db.query.words.findFirst({
     columns: {
@@ -46,6 +72,12 @@ export const v1GetWord = async (req: FastifyRequest, reply: FastifyReply) => {
       id: undefined,
     },
   };
+
+  await redisSet({
+    key,
+    data: { ...response, wordId: wordFound.id },
+    cacheTimeSeconds: 10 * 60, // 10 minutes
+  });
 
   reply.send(response);
 };
