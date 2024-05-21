@@ -1,21 +1,21 @@
 import { db } from "@/db/drizzle";
 import { historic, words } from "@/db/schema";
 import { redisGet, redisSet } from "@/utils/redis";
-import { and, count, eq, gt, ilike } from "drizzle-orm";
+import { and, count, desc, eq, ilike } from "drizzle-orm";
 import { FastifyReply, FastifyRequest } from "fastify";
 import z from "zod";
 
 const querySchema = z.object({
   search: z.string().optional(),
   limit: z.coerce.number().optional(),
-  cursor: z.string().optional(),
+  page: z.coerce.number().optional(),
 });
 
 export const v1ListHistoric = async (
   req: FastifyRequest,
   reply: FastifyReply
 ) => {
-  const { search, limit = 20, cursor } = querySchema.parse(req.query);
+  const { search, limit = 20, page = 1 } = querySchema.parse(req.query);
   const { user } = await req.getCurrentUser();
 
   const key = `url:${req.originalUrl}`;
@@ -33,14 +33,6 @@ export const v1ListHistoric = async (
       .header("x-response-time", milliseconds);
   }
 
-  const idQuery = db.select({ id: words.id }).from(words).limit(1);
-
-  if (cursor) {
-    idQuery.where(eq(words.cuid, cursor));
-  }
-
-  const [{ id }] = await idQuery;
-
   const baseQuery = db
     .select({
       wordId: historic.wordId,
@@ -54,32 +46,16 @@ export const v1ListHistoric = async (
     .where(
       and(
         eq(historic.userId, user.id),
-        search ? ilike(words.word, `${search}%`) : undefined,
-        id === 1 ? undefined : gt(words.id, id)
+        search ? ilike(words.word, `${search}%`) : undefined
       )
-    );
-
-  const previousId = id - (limit - 1);
-
-  const previousQuery = db.select({ cuid: words.cuid }).from(words).limit(1);
-
-  let previousCuid = null;
-
-  if (previousId >= 1) {
-    const [word] = await previousQuery.where(eq(words.id, previousId));
-    if (word?.cuid) {
-      previousCuid = word.cuid;
-    }
-  }
+    )
+    .orderBy(desc(historic.id));
 
   const [wordsCount] = await db
     .select({ count: count() })
     .from(baseQuery.as("baseQuery"));
 
-  const wordsList = await baseQuery.limit(limit);
-
-  const next =
-    wordsList.length > 0 ? wordsList[wordsList.length - 1].cuid : null;
+  const wordsList = await baseQuery.offset((page - 1) * limit).limit(limit);
 
   const response = {
     result: wordsList.map((word) => ({
@@ -88,10 +64,10 @@ export const v1ListHistoric = async (
       seenAt: word.seenAt,
     })),
     totalDocs: wordsCount.count,
-    previous: previousCuid,
-    next,
-    hasNext: !!next,
-    hasPrev: !!previousCuid,
+    page,
+    totalPages: Math.ceil(wordsCount.count / limit),
+    hasNext: page * limit < wordsCount.count,
+    hasPrev: page > 1,
   };
 
   await redisSet({
