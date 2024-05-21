@@ -1,7 +1,10 @@
+import { db } from "@/db/drizzle";
 import { redisInstance } from "@/db/redis";
+import { users } from "@/db/schema";
 import { redisGet, redisSet } from "@/utils/redis";
 import "@fastify/cookie";
 import "@fastify/jwt";
+import { InferSelectModel, eq } from "drizzle-orm";
 import { FastifyPluginAsync } from "fastify";
 import fp from "fastify-plugin";
 import { Redis } from "ioredis";
@@ -16,7 +19,7 @@ type JwtPayload = z.infer<typeof jwtPayloadSchema>;
 
 declare module "fastify" {
   interface FastifyRequest {
-    getCurrentUser: () => Promise<{ user: any }>;
+    getCurrentUser: () => Promise<{ user: InferSelectModel<typeof users> }>;
     signJwt: (payload: JwtPayload) => Promise<string>;
   }
 }
@@ -69,7 +72,13 @@ async function getCachedUser({
   if (!cachedUser?.user) {
     const userId = id;
 
-    const user = userId ? await {} : null;
+    const user = userId
+      ? await db.query.users.findFirst({
+          where() {
+            return eq(users.id, userId);
+          },
+        })
+      : null;
 
     await redisSet({
       key,

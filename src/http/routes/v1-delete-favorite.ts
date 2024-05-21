@@ -10,7 +10,7 @@ const paramsSchema = z.object({
   word: z.string(),
 });
 
-export const v1FavoriteWord = async (
+export const v1DeleteFavorite = async (
   req: FastifyRequest,
   reply: FastifyReply
 ) => {
@@ -19,50 +19,43 @@ export const v1FavoriteWord = async (
   const { word } = paramsSchema.parse(req.params);
   const { user } = await getCurrentUser();
 
-  const baseQuery = db
-    .select({
-      word: words.word,
-      cuid: words.cuid,
-      added: words.added,
-      id: words.id,
-    })
-    .from(words)
-    .where(eq(words.word, word))
-    .limit(1);
+  const wordFound = await db.query.words.findFirst({
+    where: () => eq(words.word, word),
+  });
 
-  const wordResult = await baseQuery;
-
-  if (wordResult.length === 0) {
+  if (!wordFound) {
     return reply.status(400).send({
       message: "Word not found",
     });
   }
 
-  const [wordData] = wordResult;
-
   const existingFavorite = await db.query.favorites.findFirst({
     where() {
       return and(
         eq(favorites.userId, user.id),
-        eq(favorites.wordId, wordData.id)
+        eq(favorites.wordId, wordFound.id)
       );
     },
   });
 
-  if (existingFavorite) {
+  if (!existingFavorite) {
     return reply.status(200).send({
-      message: "Word already favorited",
+      message: "Word not favorited",
     });
   }
 
-  const wordFavorite = await db.insert(favorites).values({
-    userId: user.id,
-    wordId: wordData.id,
-  });
+  const wordFavorite = await db
+    .delete(favorites)
+    .where(
+      and(eq(favorites.userId, user.id), eq(favorites.wordId, wordFound.id))
+    )
+    .returning({
+      id: favorites.id,
+    });
 
   const response = {
     result: {
-      favorite: true,
+      delete: !!wordFavorite,
     },
   };
 

@@ -28,6 +28,8 @@ app.register(require("@fastify/cookie"), {
   hook: "onRequest",
 });
 
+app.register(require("./authentication"));
+
 Promise.all([initRedis()]).then(() => {
   app.listen(
     {
