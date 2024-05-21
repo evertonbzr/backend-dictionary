@@ -1,6 +1,13 @@
 import { db } from "./drizzle";
 import { words } from "./schema";
 const seed = async () => {
+  const haveWords = await db.query.words.findFirst();
+
+  if (haveWords) {
+    console.log("Words already seeded");
+    process.exit();
+  }
+
   const wordsLoaded: Record<string, number> = await fetch(
     "https://raw.githubusercontent.com/dwyl/english-words/master/words_dictionary.json"
   )

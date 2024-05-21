@@ -1,5 +1,5 @@
 services:
-  redis_manager:
+  redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -8,12 +8,29 @@ services:
     networks:
       - app_net
 
-  db_manager:
-    image: postgres
+  database:
+    image: postgres:16.3
     ports:
       - 5432:5432
     environment:
       POSTGRES_PASSWORD: mysecretpassword
+    networks:
+      - app_net
+
+  app:
+    image: dictionary:1.0.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    depends_on:
+      - redis
+      - database
+    environment:
+      NODE_ENV: production
+      DB_PASSWORD: mysecretpassword
+      PORT: 3000
     networks:
       - app_net
 
