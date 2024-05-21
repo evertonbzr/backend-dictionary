@@ -58,8 +58,6 @@ export const v1ListEntries = async (
   const next =
     wordsList.length > 0 ? wordsList[wordsList.length - 1].cuid : null;
 
-  console.log(previousCuid);
-
   const response = {
     result: wordsList.map((word) => word.word),
     totalDocs: wordsCount.count,
