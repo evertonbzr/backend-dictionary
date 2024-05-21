@@ -2,6 +2,7 @@
 
 import { db } from "@/db/drizzle";
 import { words } from "@/db/schema";
+import { historic } from "@/db/schema/historic";
 import { eq } from "drizzle-orm";
 import { FastifyReply, FastifyRequest } from "fastify";
 import z from "zod";
@@ -11,26 +12,39 @@ const paramsSchema = z.object({
 });
 
 export const v1GetWord = async (req: FastifyRequest, reply: FastifyReply) => {
+  const { getCurrentUser } = req;
   const { word } = paramsSchema.parse(req.params);
 
-  const baseQuery = db
-    .select({ word: words.word, cuid: words.cuid, added: words.added })
-    .from(words)
-    .where(eq(words.word, word))
-    .limit(1);
+  const { user } = await getCurrentUser();
 
-  const wordResult = await baseQuery;
+  const wordFound = await db.query.words.findFirst({
+    columns: {
+      id: true,
+      word: true,
+      cuid: true,
+      added: true,
+    },
+    where() {
+      return eq(words.word, word);
+    },
+  });
 
-  if (wordResult.length === 0) {
+  if (!wordFound) {
     return reply.status(400).send({
       message: "Word not found",
     });
   }
 
-  const [wordData] = wordResult;
+  await db.insert(historic).values({
+    userId: user.id,
+    wordId: wordFound.id,
+  });
 
   const response = {
-    result: wordData,
+    result: {
+      ...wordFound,
+      id: undefined,
+    },
   };
 
   reply.send(response);
