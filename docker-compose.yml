@@ -18,7 +18,7 @@ services:
       - app_net
 
   app:
-    image: dictionary:1.0.0
+    image: dictionary:1.0.2
     build:
       context: .
       dockerfile: Dockerfile

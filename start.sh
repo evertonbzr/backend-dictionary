@@ -11,6 +11,6 @@ REDIS_URL="redis://${REDIS_IP}:6379"
 export DB_URL=$DATABASE_URL
 export REDIS_URI=$REDIS_URL
 
-node dist/db/migrate.js && pnpm dist/db/seed.js
+node dist/db/migrate.js && node dist/db/seed.js
 
 exec "$@"
